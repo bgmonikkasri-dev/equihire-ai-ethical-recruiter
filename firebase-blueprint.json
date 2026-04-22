@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "Job": {
+      "title": "Job Posting",
+      "description": "A job opening created by a recruiter.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["open", "closed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "inclusiveAnalysis": {
+          "type": "object",
+          "properties": {
+            "score": { "type": "number" },
+            "genderedTerms": { "type": "array", "items": { "type": "string" } },
+            "suggestions": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      },
+      "required": ["title", "description", "ownerId", "createdAt"]
+    },
+    "Candidate": {
+      "title": "Candidate Application",
+      "description": "An application for a specific job, with PII removed.",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "anonymizedData": { "type": "string", "description": "The anonymized resume content" },
+        "evaluation": {
+          "type": "object",
+          "properties": {
+            "score": { "type": "number" },
+            "justification": { "type": "string" },
+            "skillsMatch": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "status": { "type": "string", "enum": ["pending", "shortlisted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "applicantId": { "type": "string", "description": "UID of the applicant if they are a user" }
+      },
+      "required": ["jobId", "anonymizedData", "createdAt"]
+    }
+  },
+  "firestore": {
+    "jobs": {
+      "schema": "Job",
+      "description": "Collection of job postings."
+    },
+    "jobs/{jobId}/candidates": {
+      "schema": "Candidate",
+      "description": "Candidates applied for a specific job."
+    }
+  }
+}

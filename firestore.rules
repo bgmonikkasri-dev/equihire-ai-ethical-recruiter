@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isOwner(data) {
+      return data.ownerId == request.auth.uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Job validation
+    function isValidJob(data) {
+      return data.title is string && data.title.size() <= 200 &&
+             data.description is string && data.description.size() <= 10000 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt == request.time;
+    }
+
+    // Candidate validation
+    function isValidCandidate(data) {
+      return data.jobId is string && data.jobId.size() <= 128 &&
+             data.anonymizedData is string && data.anonymizedData.size() <= 50000 &&
+             data.createdAt == request.time;
+    }
+
+    // Jobs collection
+    match /jobs/{jobId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isEmailVerified() && isValidJob(request.resource.data);
+      allow update: if isSignedIn() && isEmailVerified() && isOwner(resource.data) && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'status', 'inclusiveAnalysis'])
+      );
+      allow delete: if isSignedIn() && isOwner(resource.data);
+
+      // Candidates subcollection
+      match /candidates/{candidateId} {
+        allow read: if isSignedIn() && get(/databases/$(database)/documents/jobs/$(jobId)).data.ownerId == request.auth.uid;
+        allow create: if isSignedIn() && isValidCandidate(request.resource.data);
+        allow update: if isSignedIn() && get(/databases/$(database)/documents/jobs/$(jobId)).data.ownerId == request.auth.uid &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'evaluation']);
+        allow delete: if isSignedIn() && get(/databases/$(database)/documents/jobs/$(jobId)).data.ownerId == request.auth.uid;
+      }
+    }
+  }
+}
