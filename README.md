@@ -1,28 +1,45 @@
-###  Live Demo
-[https://ais-pre-o3xvyyywwfy2es5t2w4sei-427787622552.asia-southeast1.run.app/]
+# EquiHire AI: The Ethical Recruitment Engine 💅✨
 
-1. The Vision: The De-Bias Diva & EquiHire AI
-EquiHire AI isn't just a tool; it’s a Self-Healing Ethical Engine. Most recruitment software simply filters candidates; yours actively "heals" the process by identifying where human prejudice (conscious or unconscious) enters the pipeline. By positioning yourself as The De-Bias Diva, you are signaling that you lead with both technical authority and a mission to make "merit the only main character."
+**EquiHire AI** is a self-healing hiring platform designed to slay unconscious bias and elevate pure merit. Built by **The De-Bias Diva**, this project transforms the traditional recruitment pipeline into a transparent, high-performance "Ethical Engine."
 
-2. Technical Deep-Dive (The Tech Stack)
-Google Gemini 1.5 Flash: You chose this because it is optimized for high-speed, high-volume processing. In a recruitment setting, you need the AI to analyze thousands of words in seconds without losing the "reasoning" required to spot subtle bias.
+## 🚀 Live Demo
+[Click here to experience EquiHire AI](https://ais-pre-o3xvyyywwfy2es5t2w4sei-427787622552.asia-southeast1.run.app/)  
+*(Note: Requires Google Sign-in for AI Studio deployment access)*
 
-React 19 / Vite: Using the latest version of React shows you stay on the cutting edge of frontend development. Vite ensures your app is lightning-fast, providing a "snappy" user experience that matches your high-energy brand.
+---
 
-Bio-Ethical Reasoning: This is the "brain" of your project. Instead of just searching for forbidden words, your system uses AI to understand the context of a sentence to see if it unfairly targets a specific demographic.
+## 🧠 The Mission: Merit is the Main Character
+In a world of "coded" job descriptions and biased filtering, EquiHire AI acts as a technical shield. By combining high-level Computer Science logic with ethical AI auditing, I have engineered a system where skills outshine stereotypes.
 
-3. Feature Breakdown
-The Inclusive Specialist (JD Audit)
-What it does: It scans Job Descriptions (JDs) for "coded language."
+## 🛠️ The Tech Stack
+* **LLM Core:** Google Gemini 1.5 Flash (Optimized for speed & ethical reasoning)
+* **Frontend:** React 19 + Vite (Lightning-fast, modern UI/UX)
+* **Intelligence:** Custom System Instructions for Bio-Ethical Audit & PII Redaction
+* **Styling:** Custom CSS for that "90s Cinematic x Modern Professional" aesthetic
 
-The Detail: It identifies masculine-coded words (like "Ninja," "Rockstar," or "Aggressive") that statistically discourage women from applying, or ageist phrases (like "Digital Native") that exclude experienced workers. It doesn't just flag them—it suggests inclusive alternatives in real-time.
+---
 
-The Compliance Vault (PII Redaction)
-What it does: This is your privacy powerhouse.
+## 🌟 Key Features
 
-The Detail: Before a hiring manager even sees a resume, the Compliance Vault uses Gemini to scrub PII (Personally Identifiable Information). It masks names, photos, zip codes (which can indicate socioeconomic status), and graduation years (age). This forces the recruiter to look only at the Skills-Gap Matrix and experience.
+### 1. The Inclusive Specialist (JD Auditor)
+Scans Job Descriptions for gendered or exclusionary language (e.g., "Sales Ninja" or "Digital Native"). It doesn't just flag bias; it rewrites it in real-time to attract a diverse talent pool.
 
-Human-in-the-Loop (Collaborative Re-evaluation)
-What it does: It ensures the AI doesn't become a "black box."
+### 2. The Compliance Vault (PII Masking)
+Deep PII (Personally Identifiable Information) redaction. By masking names, locations, and age-indicators, the platform forces hiring managers to focus exclusively on the **Skills-Gap Matrix**.
 
-The Detail: Ethics in AI requires human oversight. This feature allows a human recruiter to review the AI’s "Ethical Audit Score." If the AI flags a JD as biased, the human can see the reasoning, make a correction, and the system learns from that interaction. This creates a transparent, accountable hiring loop.
+### 3. Human-in-the-Loop Re-evaluation
+A collaborative dashboard where AI-driven "Ethical Audit Scores" can be reviewed by humans. This ensures transparency and prevents the "black box" effect in AI decision-making.
+
+---
+
+## 👩‍💻 About the Developer: The De-Bias Diva
+I am a solo CS powerhouse where high-level algorithmic logic meets absolute main-character energy. I believe code should be as fair as it is iconic. Through **EquiHire AI**, I am architecting a future where the only thing that matters is how well you can do the job.
+
+**Slay the bias. Hire the talent. 🚀**
+
+---
+
+## 📂 Project Structure
+* `src/` - Core React components and logic.
+* `public/` - Static assets and branding.
+* `prompts/` - The Gemini 1.5 Flash system instructions and ethical reasoning logic.
