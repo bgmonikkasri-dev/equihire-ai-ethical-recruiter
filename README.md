@@ -1,4 +1,4 @@
-# EquiHire AI: The Ethical Recruitment Engine 💅✨
+# EquiHire AI: The Ethical Recruitment Engine✨
 
 **EquiHire AI** is a self-healing hiring platform designed to slay unconscious bias and elevate pure merit. Built by **The De-Bias Diva**, this project transforms the traditional recruitment pipeline into a transparent, high-performance "Ethical Engine."
 
