@@ -14,7 +14,10 @@ import {
   XCircle,
   LayoutDashboard,
   CheckCircle,
-  RotateCw
+  RotateCw,
+  Edit,
+  Download,
+  Filter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, signInWithGoogle, db } from './lib/firebase';
@@ -73,17 +76,30 @@ const Navbar = ({ user, onSignOut }: { user: FirebaseUser | null, onSignOut: () 
   </nav>
 );
 
-const JobForm = ({ onCancel, onSubmit, loading }: { onCancel: () => void, onSubmit: (title: string, desc: string) => void, loading: boolean }) => {
-  const [title, setTitle] = useState('');
-  const [desc, setDesc] = useState('');
+const JobForm = ({ 
+  onCancel, 
+  onSubmit, 
+  loading,
+  initialTitle = '',
+  initialDesc = ''
+}: { 
+  onCancel: () => void, 
+  onSubmit: (title: string, desc: string) => void, 
+  loading: boolean,
+  initialTitle?: string,
+  initialDesc?: string
+}) => {
+  const [title, setTitle] = useState(initialTitle);
+  const [desc, setDesc] = useState(initialDesc);
+  const isEditing = !!initialTitle;
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm"
+      className={`bg-white p-6 rounded-xl border border-gray-200 shadow-sm ${isEditing ? 'border-none shadow-none p-0' : ''}`}
     >
-      <h3 className="text-lg font-semibold mb-4">Create New Job Posting</h3>
+      {!isEditing && <h3 className="text-lg font-semibold mb-4">Create New Job Posting</h3>}
       <div className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Job Title</label>
@@ -118,7 +134,7 @@ const JobForm = ({ onCancel, onSubmit, loading }: { onCancel: () => void, onSubm
             className="px-6 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {loading ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Plus size={16} />}
-            Analyze & Create
+            {isEditing ? 'Save Changes' : 'Analyze & Create'}
           </button>
         </div>
       </div>
@@ -163,9 +179,10 @@ const JobCard: React.FC<JobCardProps> = ({ job, onClick, active }) => (
 interface CandidateCardProps {
   candidate: Candidate;
   onReevaluate: (candidate: Candidate, note: string) => Promise<void>;
+  onUpdateStatus: (candidate: Candidate, status: 'pending' | 'shortlisted' | 'rejected') => Promise<void>;
 }
 
-const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onReevaluate }) => {
+const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onReevaluate, onUpdateStatus }) => {
   const [showFullRegistry, setShowFullRegistry] = useState(false);
   const [activeTab, setActiveTab] = useState<'audit' | 'compliance'>('audit');
   const [recruiterNote, setRecruiterNote] = useState('');
@@ -179,27 +196,79 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onReevaluate }
     setRecruiterNote('');
   };
 
+  const downloadReport = (type: 'audit' | 'compliance') => {
+    let content = '';
+    if (type === 'audit' && candidate.auditReport) {
+      content = `ETHICAL AUDIT REPORT - EquiHire AI\n\n` +
+                `Score: ${candidate.evaluation.score}%\n` +
+                `Justification: ${candidate.evaluation.justification}\n\n` +
+                `Skills Matrix:\n` +
+                (candidate.auditReport.skillsMatrix?.map(s => `- ${s.requiredSkill}: ${s.matchFound ? 'Matched' : 'Missing'} (${s.candidateEvidence})`).join('\n') || 'N/A') +
+                `\n\nEthics Confidence: ${candidate.auditReport.confidenceScore}%` +
+                (candidate.auditReport.strategicRecommendation ? `\n\nStrategic Recommendation: ${candidate.auditReport.strategicRecommendation}` : '');
+    } else if (candidate.auditReport?.complianceAudit) {
+      content = `COMPLIANCE & TRANSPARENCY REPORT - EquiHire AI\n\n` +
+                `Redaction Log: ${(candidate.auditReport.complianceAudit.piiRedactionLog || []).join(', ')}\n` +
+                `Reasoning Trace: ${candidate.auditReport.complianceAudit.reasoningTrace}\n` +
+                `Non-Discrimination: ${candidate.auditReport.complianceAudit.nonDiscriminationStatement}\n` +
+                `Auditor: ${candidate.auditReport.complianceAudit.modelAndVersion}`;
+    }
+
+    if (!content) return;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `EquiHire_${type}_Report.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden h-fit"
     >
-      <div className="absolute top-0 right-0 p-4 flex flex-col items-end">
-        <span className="text-3xl font-bold tracking-tighter text-black">{candidate.evaluation.score}</span>
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Match Score</span>
-      </div>
-      
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-          <User size={24} />
+      <div className="flex items-center justify-between mb-6 pr-16 bg-gray-50 -mx-6 -mt-6 p-6 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-gray-400 border border-gray-100 shadow-sm">
+            <User size={24} />
+          </div>
+          <div>
+            <h4 className="font-bold text-gray-900 leading-none mb-1">Anonymized Candidate</h4>
+            <div className="flex gap-2">
+              {candidate.status === 'shortlisted' && <span className="text-[9px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Shortlisted</span>}
+              {candidate.status === 'rejected' && <span className="text-[9px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Rejected</span>}
+              {candidate.status === 'pending' && <span className="text-[9px] bg-gray-100 text-gray-700 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-gray-200">Pending</span>}
+            </div>
+          </div>
         </div>
-        <div>
-          <h4 className="font-bold text-gray-900">Anonymized Candidate</h4>
-          <div className="flex gap-2 mt-1">
-            {candidate.status === 'shortlisted' && <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded uppercase tracking-wider">Shortlisted</span>}
-            {candidate.status === 'rejected' && <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded uppercase tracking-wider">Rejected</span>}
-            {candidate.status === 'pending' && <span className="text-[10px] bg-gray-100 text-gray-700 font-bold px-2 py-0.5 rounded uppercase tracking-wider">Pending Review</span>}
+
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => downloadReport(activeTab)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-black hover:border-gray-400 transition-all shadow-sm"
+          >
+            <Download size={12} />
+            Report
+          </button>
+          <div className="flex gap-1">
+            <button 
+              onClick={() => onUpdateStatus(candidate, 'shortlisted')}
+              className={`p-1.5 rounded-lg border transition-all shadow-sm ${candidate.status === 'shortlisted' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-400 border-gray-200 hover:text-green-600 hover:border-green-600'}`}
+              title="Shortlist"
+            >
+              <CheckCircle size={14} />
+            </button>
+            <button 
+              onClick={() => onUpdateStatus(candidate, 'rejected')}
+              className={`p-1.5 rounded-lg border transition-all shadow-sm ${candidate.status === 'rejected' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-200 hover:text-red-600 hover:border-red-600'}`}
+              title="Reject"
+            >
+              <XCircle size={14} />
+            </button>
           </div>
         </div>
       </div>
@@ -382,8 +451,10 @@ export default function App() {
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [showJobForm, setShowJobForm] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [creatingJob, setCreatingJob] = useState(false);
   const [evaluatingResume, setEvaluatingResume] = useState(false);
+  const [sortBy, setSortBy] = useState<'score' | 'date' | 'status'>('score');
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => setUser(u));
@@ -481,6 +552,42 @@ export default function App() {
     }
   };
 
+  const handleEditJob = async (id: string, title: string, desc: string) => {
+    if (!user) return;
+    setCreatingJob(true);
+    try {
+      const analysis = await analyzeJobDescription(desc);
+      await updateDoc(doc(db, 'jobs', id), {
+        title,
+        description: desc,
+        inclusiveAnalysis: analysis
+      });
+      setEditingJob(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCreatingJob(false);
+    }
+  };
+
+  const handleUpdateStatus = async (candidate: Candidate, status: 'pending' | 'shortlisted' | 'rejected') => {
+    if (!activeJob) return;
+    try {
+      await updateDoc(doc(db, `jobs/${activeJob.id}/candidates`, candidate.id), {
+        status
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const sortedCandidates = [...candidates].sort((a, b) => {
+    if (sortBy === 'score') return b.evaluation.score - a.evaluation.score;
+    if (sortBy === 'date') return b.createdAt?.toMillis() - a.createdAt?.toMillis();
+    if (sortBy === 'status') return a.status.localeCompare(b.status);
+    return 0;
+  });
+
   if (!user) {
     return (
       <div className="min-h-screen bg-[#E4E3E0] flex flex-col items-center justify-center p-4">
@@ -570,7 +677,15 @@ export default function App() {
                 >
                   <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                     <div>
-                      <h2 className="text-3xl font-bold tracking-tight mb-1">{activeJob.title}</h2>
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-3xl font-bold tracking-tight mb-1">{activeJob.title}</h2>
+                        <button 
+                          onClick={() => setEditingJob(activeJob)}
+                          className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all"
+                        >
+                          <Edit size={16} />
+                        </button>
+                      </div>
                       <div className="flex items-center gap-4 text-xs font-mono text-gray-500 uppercase tracking-widest">
                         <span>Created {new Date(activeJob.createdAt?.toDate()).toLocaleDateString()}</span>
                         <span className="w-1 h-1 bg-gray-300 rounded-full"/>
@@ -658,10 +773,24 @@ export default function App() {
                 {/* Candidate Management Section */}
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                      <SearchCode size={16} />
-                      Candidate Pipeline
-                    </h3>
+                    <div className="flex items-center gap-6">
+                      <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                        <SearchCode size={16} />
+                        Candidate Pipeline
+                      </h3>
+                      <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-lg border border-gray-200">
+                        <Filter size={12} className="text-gray-400" />
+                        <select 
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as any)}
+                          className="text-[10px] font-bold uppercase tracking-widest text-gray-600 outline-none cursor-pointer"
+                        >
+                          <option value="score">Sort by Score</option>
+                          <option value="date">Sort by Date</option>
+                          <option value="status">Sort by Status</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="relative">
                       <input 
                         type="file" 
@@ -690,11 +819,12 @@ export default function App() {
                   </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                      {candidates.map(candidate => (
+                      {sortedCandidates.map(candidate => (
                         <CandidateCard 
                           key={candidate.id} 
                           candidate={candidate} 
                           onReevaluate={handleReevaluate}
+                          onUpdateStatus={handleUpdateStatus}
                         />
                       ))}
                     {candidates.length === 0 && !evaluatingResume && (
@@ -722,6 +852,32 @@ export default function App() {
 
         </div>
       </main>
+      <AnimatePresence>
+        {editingJob && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 className="text-xl font-bold">Edit Job Posting</h3>
+                <button onClick={() => setEditingJob(null)} className="text-gray-400 hover:text-black hover:bg-gray-100 p-1.5 rounded-lg"><XCircle size={20}/></button>
+              </div>
+              <div className="p-6">
+                <JobForm 
+                  initialTitle={editingJob.title}
+                  initialDesc={editingJob.description}
+                  onSubmit={(title, desc) => handleEditJob(editingJob.id, title, desc)}
+                  onCancel={() => setEditingJob(null)}
+                  loading={creatingJob}
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
